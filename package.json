@@ -1,0 +1,42 @@
+{
+  "name": "video-captcha",
+  "version": "0.0.1",
+  "description": "A Quasar Framework app",
+  "productName": "Quasar App",
+  "author": "mohamara <m.desproda@gmail.com>",
+  "private": true,
+  "scripts": {
+    "test": "echo \"No test specified\" && exit 0"
+  },
+  "dependencies": {
+    "@quasar/cli": "^1.2.1",
+    "@quasar/extras": "^1.0.0",
+    "@tensorflow-models/face-landmarks-detection": "0.0.3",
+    "@tensorflow/tfjs-backend-webgl": "^2.4.0",
+    "@tensorflow/tfjs-core": "^2.4.0",
+    "core-js": "^3.6.5",
+    "ml5": "^0.6.1",
+    "quasar": "^2.0.0",
+    "vuex": "^4.0.1"
+  },
+  "devDependencies": {
+    "@quasar/app": "^3.0.0",
+    "@types/node": "^10.17.15"
+  },
+  "browserslist": [
+    "last 10 Chrome versions",
+    "last 10 Firefox versions",
+    "last 4 Edge versions",
+    "last 7 Safari versions",
+    "last 8 Android versions",
+    "last 8 ChromeAndroid versions",
+    "last 8 FirefoxAndroid versions",
+    "last 10 iOS versions",
+    "last 5 Opera versions"
+  ],
+  "engines": {
+    "node": ">= 12.22.1",
+    "npm": ">= 6.13.4",
+    "yarn": ">= 1.21.1"
+  }
+}
