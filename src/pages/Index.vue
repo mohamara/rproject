@@ -5,10 +5,10 @@
       style="font-size: 20px; font-weight: bold"
     >
       <div class="col"></div>
-      <div class="col-6 text-center">سر شما به سمت {{ faceDirection }} است</div>
+      <div class="col-6 text-center">سر شما به سمت {{ position }} است</div>
       <div class="col"></div>
     </div>
-    <div class="row items-center justify-evenly">
+    <div class="row items-center justify-evenly q-pa-md">
       <div class="col"></div>
       <div class="col">
         <canvas ref="cc" class="canvas" />
@@ -19,10 +19,46 @@
           @playing="videoPlaying = true"
           @pause="videoPlaying = false"
           class="camera-gestures-camera-feed"
+          :style="`border-color:${cameraFramColor}`"
         ></video>
       </div>
-      <div class="col"></div>
+      <div class="col items-center text-right q-gutter-sm">
+        جهت احراز هویت به ترتیب زیر جهت سر خود را تغییر دهید
+
+        <div class="row justify-center">
+          <q-btn
+            color="primary"
+            label="شروع فرایند"
+            @click="letChecking = true"
+          />
+        </div>
+        <div
+          class="row justify-center order"
+          v-for="(order, index) in ordersText"
+          :key="index"
+        >
+          <div class="col">{{ order }}</div>
+          <div class="col-2">
+            <div v-if="index == orderPosition" class="cursor">👈</div>
+          </div>
+        </div>
+      </div>
     </div>
+    <q-dialog v-model="isFinished">
+      <q-card>
+        <q-card-section>
+          <div class="text-h6">پایان احراز هویت</div>
+        </q-card-section>
+
+        <q-card-section class="q-pt-none">
+          با تشکر . احراز هویت شما انجام شد
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="متوجه شدم" color="primary" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -31,7 +67,6 @@ import { defineComponent, ref } from "vue";
 import * as ml5 from "ml5";
 import fp from "../plugin/gestureFinder";
 import * as faceLandmarksDetection from "@tensorflow-models/face-landmarks-detection";
-import { Console } from "console";
 require("@tensorflow/tfjs-backend-webgl");
 
 export default defineComponent({
@@ -40,6 +75,16 @@ export default defineComponent({
   setup() {},
   data() {
     return {
+      time: Date.now(),
+      result: 1,
+      position: "",
+      orders: null,
+      ordersText: null,
+      letChecking: false,
+      isFinished: ref(false),
+      awaitTimer: 0,
+      orderPosition: 0,
+      cameraFramColor: "blue",
       landmarkColors: {
         thumb: "red",
         indexFinger: "blue",
@@ -50,7 +95,7 @@ export default defineComponent({
       },
       theref: this.$refs,
       config: {
-        video: { width: 640, height: 480, fps: 30 },
+        video: { width: 0, height: 0, fps: 30 },
       },
       gestureStrings: {
         thumbs_up: "👍",
@@ -82,6 +127,74 @@ export default defineComponent({
     };
   },
   methods: {
+    async randomOrders() {
+      let finalOrders = [];
+      let tempOrders = await Array.from(
+        { length: 2 },
+        () => Math.floor(Math.random() * 2) + 1
+      );
+      tempOrders.forEach((order) => {
+        finalOrders.push(order);
+        finalOrders.push(0);
+      });
+      this.orders = finalOrders;
+      this.showOrders();
+    },
+    checkOrders() {
+      if (this.orders[this.orderPosition] === this.faceDirection) {
+        this.getClass(1);
+        this.awaitTimer = 1;
+        let _this = this;
+        setTimeout(function () {
+          _this.awaitTimer = 0;
+          _this.orderPosition++;
+        }, 3000);
+      } else if (this.orderPosition >= this.orders.length) {
+        this.getClass(0);
+        this.isFinished = true;
+      } else {
+        this.getClass(-1);
+      }
+    },
+
+    resetOrders() {},
+    showOrders() {
+      this.ordersText = this.orders.map((order) => {
+        order = this.getPositionName(order);
+        return order;
+      });
+    },
+    getClass(result) {
+      let color;
+      switch (result) {
+        case 0:
+          color = "blue";
+          break;
+        case 1:
+          color = "green";
+          break;
+        case -1:
+          color = "red";
+      }
+      this.cameraFramColor = color;
+      return color;
+    },
+    getPositionName(direction) {
+      // console.log("get getPositionName", Date.now() - this.time);
+      let position;
+      switch (direction) {
+        case 0:
+          position = "روبرو";
+          break;
+        case 1:
+          position = "چپ";
+          break;
+        case 2:
+          position = "راست";
+          break;
+      }
+      return position;
+    },
     async ml5analyze() {
       setTimeout(async () => {
         let predictions = [];
@@ -140,27 +253,23 @@ export default defineComponent({
                 predictions[i].annotations.noseTip[0][1],
                 predictions[i].annotations.rightCheek[0][1]
               );
-              console.log(predictions[i].annotations);
-              if (distleft > distright) {
-                this.faceDirection = "چپ";
-              } else {
-                this.faceDirection = "راست";
-              }
               // console.log(predictions[i].annotations);
-              // // using a minimum confidence of 7.5 (out of 10)
-              // const est = GE.estimate(predictions[i].landmarks, 7.5);
 
-              // if (est.gestures.length > 0) {
-              //   // find gesture with highest confidence
-              //   let result = est.gestures.reduce((p, c) => {
-              //     return p.confidence > c.confidence ? p : c;
-              //   });
-              //   console.log(result);
-              //   this.gesture = this.gestureStrings[result.name];
-              // }
+              if (distleft - distright < -10) {
+                this.faceDirection = 1;
+                this.position = this.getPositionName(1);
+              } else if (distleft - distright > 10) {
+                this.faceDirection = 2;
+                this.position = this.getPositionName(2);
+              } else {
+                this.faceDirection = 0;
+                this.position = this.getPositionName(0);
+              }
+              if (this.letChecking && this.awaitTimer == 0) {
+                this.checkOrders();
+              }
             }
             this.clear();
-            // this.draw(predictions[0].annotations.palmBase);
           }
         });
       }, 1);
@@ -205,6 +314,9 @@ export default defineComponent({
       this.canvs.globalCompositeOperation = "source-over";
     },
   },
+  created() {
+    this.randomOrders();
+  },
   mounted: async function () {
     // this.knn = createKnnClassifier();
     // this.mobilenet = await loadMobilenet();
@@ -228,12 +340,19 @@ export default defineComponent({
 </script>
 <style scoped>
 video.camera-gestures-camera-feed {
-  /* transform: rotateY(180deg); */
-  /* -webkit-transform: rotateY(180deg); Safari and Chrome */
-  /* -moz-transform: rotateY(180deg); Firefox */
+  border-radius: 10px;
+  border: 3px solid;
+  width: 100%;
+  transform: rotateY(180deg);
+  -webkit-transform: rotateY(180deg); /*Safari and Chrome */
+  -moz-transform: rotateY(180deg); /* Firefox */
 }
 .canvas {
   position: absolute;
   z-index: 10;
+}
+.order {
+  text-align: right !important;
+  font-size: 20px;
 }
 </style>
