@@ -10,18 +10,6 @@
     </div>
     <div class="row items-center justify-evenly q-pa-md">
       <div class="col"></div>
-      <div class="col">
-        <canvas ref="cc" class="canvas" />
-        <video
-          ref="video"
-          autoplay
-          playsinline
-          @playing="videoPlaying = true"
-          @pause="videoPlaying = false"
-          class="camera-gestures-camera-feed"
-          :style="`border-color:${cameraFramColor}`"
-        ></video>
-      </div>
       <div class="col items-center text-right q-gutter-sm">
         جهت احراز هویت به ترتیب زیر جهت سر خود را تغییر دهید
 
@@ -42,6 +30,18 @@
             <div v-if="index == orderPosition" class="cursor">👈</div>
           </div>
         </div>
+      </div>
+      <div class="col">
+        <canvas ref="cc" class="canvas" />
+        <video
+          ref="video"
+          autoplay
+          playsinline
+          @playing="videoPlaying = true"
+          @pause="videoPlaying = false"
+          class="camera-gestures-camera-feed"
+          :style="`border-color:${cameraFramColor}`"
+        ></video>
       </div>
     </div>
     <q-dialog v-model="isFinished">
